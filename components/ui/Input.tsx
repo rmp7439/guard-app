@@ -15,8 +15,19 @@ export function Input({ label, error, prefix, style, ...props }: InputProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
-    <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+    <View 
+      style={styles.container}
+      accessible={true}
+      accessibilityRole="none"
+    >
+      {label && (
+        <Text 
+          style={styles.label}
+          importantForAccessibility="no"
+        >
+          {label}
+        </Text>
+      )}
       
       <View 
         style={[
@@ -31,19 +42,28 @@ export function Input({ label, error, prefix, style, ...props }: InputProps) {
           </View>
         )}
         <TextInput
+          accessibilityLabel={label || props.placeholder}
+          accessibilityHint={error}
           style={[
             styles.input,
             prefix ? styles.inputWithPrefix : styles.inputStandard,
             style,
           ]}
           placeholderTextColor={colors.textSecondary}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+          onFocus={(e) => {
+            setIsFocused(true);
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            setIsFocused(false);
+            props.onBlur?.(e);
+          }}
+          // Enhance keyboard enterprise experience
+          returnKeyType={props.keyboardType === 'numeric' ? 'done' : 'default'}
+          autoCorrect={false}
           {...props}
         />
       </View>
-
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -51,7 +71,7 @@ export function Input({ label, error, prefix, style, ...props }: InputProps) {
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    marginBottom: spacing.md, // Tighter spacing
+    marginBottom: spacing.md, 
   },
   label: {
     fontSize: typography.size.sm,
@@ -62,7 +82,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     width: '100%',
-    height: 54, // Compact height
+    height: 54, 
     borderRadius: radius.xl,
     borderWidth: 1,
     borderColor: colors.borderLight,
@@ -72,6 +92,12 @@ const styles = StyleSheet.create({
   inputFocused: {
     borderColor: colors.primary,
     backgroundColor: colors.white,
+    // Add subtle shadow for focus state elevation
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   inputError: {
     borderColor: colors.error,
@@ -99,11 +125,5 @@ const styles = StyleSheet.create({
   },
   inputStandard: {
     paddingHorizontal: spacing.lg,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: typography.size.sm,
-    marginTop: 4,
-    paddingHorizontal: 2,
   },
 });

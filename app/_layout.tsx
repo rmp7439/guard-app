@@ -9,10 +9,11 @@ export default function RootLayout() {
       <StatusBar style="auto" />
       <AuthProvider>
         <AttendanceProvider>
-          <Stack screenOptions={{ headerShown: false }}>
+          {/* Added fade animation for seamless enterprise-grade transitions between major flows */}
+          <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
             <Stack.Screen name="index" />
-            <Stack.Screen name="(auth)" />
-            <Stack.Screen name="(guard)" />
+            <Stack.Screen name="(auth)" options={{ animation: 'slide_from_right' }} />
+            <Stack.Screen name="(guard)" options={{ animation: 'fade' }} />
           </Stack>
         </AttendanceProvider>
       </AuthProvider>

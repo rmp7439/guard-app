@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Keyboard, TextInput } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Keyboard, TextInput, Animated } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { Screen } from '../../components/ui/Screen';
 import { Button } from '../../components/ui/Button';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radius } from '../../theme/radius';
 import { typography } from '../../theme/typography';
-import { OTP_REGEX } from '../../constants/validation';
+import { DEMO_OTP } from '../../constants/validation';
 import { AuthService } from '../../services/auth/auth.service';
 import { useAuth } from '../../features/auth/contexts/AuthContext';
 
@@ -21,14 +22,36 @@ export default function OTPScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(0);
   const inputRefs = useRef<Array<TextInput | null>>([]);
+  
+  const errorOpacity = useRef(new Animated.Value(0)).current;
+  const isMounted = useRef(true);
 
   const otpString = otp.join('');
   const isButtonDisabled = otpString.length !== 6 || isLoading;
 
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Animated.timing(errorOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      errorOpacity.setValue(0);
+    }
+  }, [error, errorOpacity]);
+
   const handleOtpChange = (text: string, index: number) => {
     const cleanText = text.replace(/[^0-9]/g, '');
     
-    // Handle paste of multiple digits
     if (cleanText.length > 1) {
       const chars = cleanText.split('').slice(0, 6);
       const newOtp = ['', '', '', '', '', ''];
@@ -48,14 +71,12 @@ export default function OTPScreen() {
     setOtp(newOtp);
     if (error) setError('');
 
-    // Auto next input
     if (cleanText !== '' && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    // Backspace navigation
     if (e.nativeEvent.key === 'Backspace' && otp[index] === '' && index > 0) {
       inputRefs.current[index - 1]?.focus();
       const newOtp = [...otp];
@@ -68,8 +89,8 @@ export default function OTPScreen() {
     Keyboard.dismiss();
     setError('');
 
-    if (!OTP_REGEX.test(otpString)) {
-      setError('Invalid OTP format.');
+    if (otpString !== DEMO_OTP) {
+      setError(`Invalid OTP. Please enter the demo OTP ${DEMO_OTP}.`);
       return;
     }
 
@@ -77,16 +98,22 @@ export default function OTPScreen() {
 
     try {
       const mobileNumber = Array.isArray(mobile) ? mobile[0] : (mobile || '');
-      
-      // Delegate verification entirely to the service to mock backend behavior
       const response = await AuthService.verifyOtp({ mobile: mobileNumber, otp: otpString });
       
-      login(response.user, response.token);
-      router.replace('/(guard)/home');
-    } catch (err: any) {
-      setError(err.message || 'Invalid OTP entered. Please try again.');
+      if (isMounted.current) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        login(response.user, response.token);
+        router.replace('/(guard)/home');
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        const message = err instanceof Error ? err.message : 'Invalid OTP entered. Please try again.';
+        setError(message);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -134,7 +161,9 @@ export default function OTPScreen() {
               />
             ))}
           </View>
-          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          <Animated.Text style={[styles.errorText, { opacity: errorOpacity }]}>
+            {error || ' '}
+          </Animated.Text>
         </View>
 
         <Button
@@ -234,11 +263,11 @@ const styles = StyleSheet.create({
   errorText: {
     color: colors.error,
     fontSize: typography.size.sm,
-    marginTop: 4,
+    marginTop: spacing.sm,
     paddingHorizontal: 2,
   },
   buttonSpacing: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     marginBottom: spacing.xxxl,
   },
 });

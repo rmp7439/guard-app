@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, Keyboard } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, Keyboard, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { Screen } from '../../components/ui/Screen';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
@@ -8,7 +9,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { radius } from '../../theme/radius';
 import { typography } from '../../theme/typography';
-import { MOBILE_REGEX } from '../../constants/validation';
+import { DEMO_MOBILE } from '../../constants/validation';
 import { AuthService } from '../../services/auth/auth.service';
 
 export default function LoginScreen() {
@@ -17,31 +18,59 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const errorOpacity = useRef(new Animated.Value(0)).current;
+  const isMounted = useRef(true);
+
   const isButtonDisabled = mobileNumber.length !== 10 || isLoading;
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Animated.timing(errorOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      errorOpacity.setValue(0);
+    }
+  }, [error, errorOpacity]);
 
   const handleContinue = async () => {
     Keyboard.dismiss();
     setError('');
 
-    if (!MOBILE_REGEX.test(mobileNumber)) {
-      setError('Please enter a valid Indian mobile number.');
+    if (mobileNumber !== DEMO_MOBILE) {
+      setError(`Invalid mobile number. Please use the demo number ${DEMO_MOBILE}.`);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // Delegate validation entirely to the service to mock backend behavior
       await AuthService.sendOtp(mobileNumber);
-      
-      router.push({
-        pathname: '/(auth)/otp',
-        params: { mobile: mobileNumber },
-      });
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong. Please try again.');
+      if (isMounted.current) {
+        router.push({
+          pathname: '/(auth)/otp',
+          params: { mobile: mobileNumber },
+        });
+      }
+    } catch (err) {
+      if (isMounted.current) {
+        const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.';
+        setError(message);
+      }
     } finally {
-      setIsLoading(false);
+      if (isMounted.current) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -70,8 +99,12 @@ export default function LoginScreen() {
               if (error) setError('');
             }}
             editable={!isLoading}
-            error={error}
+            error={error ? ' ' : undefined} 
           />
+          
+          <Animated.Text style={[styles.errorBanner, { opacity: errorOpacity }]}>
+            {error}
+          </Animated.Text>
         </View>
 
         <Button
@@ -139,10 +172,16 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  errorBanner: {
+    color: colors.error,
+    fontSize: typography.size.sm,
+    paddingHorizontal: 4,
+    marginTop: -8, 
   },
   buttonSpacing: {
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     marginBottom: spacing.xxxl,
   },
   footer: {

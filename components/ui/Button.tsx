@@ -1,5 +1,6 @@
 import React from 'react';
 import { Pressable, Text, ActivityIndicator, StyleSheet, ViewStyle } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { radius } from '../../theme/radius';
 import { typography } from '../../theme/typography';
@@ -12,7 +13,7 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   variant?: ButtonVariant;
-  style?: ViewStyle;
+  style?: ViewStyle | ViewStyle[];
 }
 
 export function Button({
@@ -27,8 +28,20 @@ export function Button({
   const isDanger = variant === 'danger';
   const isPrimary = variant === 'primary';
 
+  const handlePress = () => {
+    if (!disabled && !loading && onPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      onPress();
+    }
+  };
+
   return (
     <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      // Increased hit area for better touch targets and accessibility
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       style={({ pressed }) => [
         styles.button,
         isPrimary && styles.primaryBg,
@@ -38,7 +51,7 @@ export function Button({
         pressed && !disabled && styles.pressed,
         style,
       ]}
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled || loading}
     >
       {loading ? (
@@ -68,13 +81,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     flexDirection: 'row',
+    overflow: 'hidden',
   },
   pressed: {
     opacity: 0.85,
-    transform: [{ scale: 0.99 }],
+    transform: [{ scale: 0.98 }],
   },
   disabled: {
-    opacity: 0.4, // Made more visually distinguishable
+    opacity: 0.5,
+    backgroundColor: colors.borderLight,
+    borderColor: 'transparent',
   },
   primaryBg: {
     backgroundColor: colors.primary,
@@ -101,6 +117,6 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   disabledText: {
-    color: colors.textSecondary, // Further visual cue for disabled text
+    color: colors.textSecondary,
   },
 });

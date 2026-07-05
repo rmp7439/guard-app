@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 
 export default function GuardLayout() {
@@ -30,6 +31,14 @@ export default function GuardLayout() {
           fontSize: 12,
           fontWeight: '600',
           marginTop: 4,
+        },
+        // Ensure standard touch transitions without abrupt jumps
+        tabBarHideOnKeyboard: true, 
+      }}
+      screenListeners={{
+        tabPress: () => {
+          // Provide subtle haptic feedback across navigation
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
         },
       }}
     >

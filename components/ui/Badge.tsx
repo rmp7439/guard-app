@@ -1,18 +1,18 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../../theme/colors';
-import { radius } from '../../theme/radius';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { colors } from "../../theme/colors";
+import { radius } from "../../theme/radius";
+import { spacing } from "../../theme/spacing";
+import { typography } from "../../theme/typography";
 
-type BadgeVariant = 'success' | 'warning' | 'danger' | 'neutral';
+type BadgeVariant = "success" | "warning" | "danger" | "neutral" | "primary";
 
 interface BadgeProps {
   label: string;
   variant?: BadgeVariant;
 }
 
-export function Badge({ label, variant = 'neutral' }: BadgeProps) {
+export function Badge({ label, variant = "neutral" }: BadgeProps) {
   return (
     <View style={[styles.badge, styles[`${variant}Bg`]]}>
       <Text style={[styles.text, styles[`${variant}Text`]]}>{label}</Text>
@@ -25,9 +25,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.round,
-    alignSelf: 'flex-start',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignSelf: "flex-start",
+    alignItems: "center",
+    justifyContent: "center",
   },
   text: {
     fontSize: typography.size.sm,
@@ -41,4 +41,11 @@ const styles = StyleSheet.create({
   dangerText: { color: colors.errorText },
   neutralBg: { backgroundColor: colors.neutralBg },
   neutralText: { color: colors.neutralText },
+  primaryBg: {
+    backgroundColor: colors.primary,
+  },
+
+  primaryText: {
+    color: colors.white,
+  },
 });

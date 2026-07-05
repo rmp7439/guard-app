@@ -1,37 +1,20 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { Screen } from '../../components/ui/Screen';
+import { Skeleton } from '../../components/ui/Skeleton';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { radius } from '../../theme/radius';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../features/auth/contexts/AuthContext';
 import { useAttendance } from '../../features/attendance/contexts/AttendanceContext';
-
-const formatTime = (date: Date | null): string => {
-  if (!date) return '--';
-  let hours = date.getHours();
-  const minutes = date.getMinutes();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const strMinutes = minutes < 10 ? `0${minutes}` : minutes.toString();
-  return `${hours}:${strMinutes} ${ampm}`;
-};
-
-const calculateDuration = (start: Date | null, end: Date | null): string => {
-  if (!start || !end) return '0h 00m';
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs < 0) return '0h 00m';
-  
-  const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  return `${diffHrs}h ${diffMins}m`;
-};
+import { formatTime, formatDuration } from '../../utils/formatters';
 
 const SummaryRow = ({ label, value, icon }: { label: string; value: string; icon: keyof typeof Ionicons.glyphMap }) => (
   <View style={styles.summaryRow}>
@@ -46,17 +29,95 @@ const SummaryRow = ({ label, value, icon }: { label: string; value: string; icon
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { status, checkInTime, checkOutTime } = useAttendance();
+  const { 
+    todayRecord, 
+    currentStatus, 
+    workingMinutes, 
+    canCheckIn, 
+    canCheckOut,
+    isAttendanceLoading,
+    attendanceHistory
+  } = useAttendance();
 
-  const isCheckedIn = status === 'checked_in';
+  const [greeting, setGreeting] = useState('Good Morning ☀️');
+  const [refreshing, setRefreshing] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
+
+  useEffect(() => {
+    const updateGreeting = () => {
+      const hour = new Date().getHours();
+      if (hour >= 5 && hour < 12) setGreeting('Good Morning ☀️');
+      else if (hour >= 12 && hour < 17) setGreeting('Good Afternoon 🌤️');
+      else if (hour >= 17 && hour < 21) setGreeting('Good Evening 🌇');
+      else setGreeting('Good Night 🌙');
+    };
+
+    updateGreeting();
+    const timer = setInterval(updateGreeting, 60000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleRefresh = React.useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setRefreshing(true);
+    setTimeout(() => {
+      if (isMounted.current) setRefreshing(false);
+    }, 1000);
+  }, []);
+
+  const getStatusBadgeLabel = () => {
+    if (currentStatus === 'NOT_STARTED') return 'Not Started';
+    if (currentStatus === 'CHECKED_IN') return 'On Duty';
+    return 'Shift Completed';
+  };
+
+  const getStatusBadgeVariant = () => {
+    if (currentStatus === 'CHECKED_IN') return 'success';
+    return 'neutral';
+  };
+
+  const getActionButtonTitle = () => {
+    if (canCheckIn) return 'Go to Check In';
+    if (canCheckOut) return 'Go to Check Out';
+    return 'View Attendance';
+  };
+
+  const totalRecords = attendanceHistory.length;
+  const completedShifts = attendanceHistory.filter(r => r.checkOutTime !== null).length;
+  const activeShift = currentStatus === 'CHECKED_IN' ? 'Yes' : 'No';
+
+  if (isAttendanceLoading) {
+    return (
+      <Screen contentContainerStyle={styles.container} backgroundColor={colors.background}>
+        <View style={styles.header}>
+          <Skeleton width={140} height={16} style={{ marginBottom: spacing.sm }} />
+          <Skeleton width={200} height={32} />
+        </View>
+        <Card style={styles.section}><Skeleton height={24} /></Card>
+        <Card style={styles.section}><Skeleton height={60} /></Card>
+        <Skeleton height={54} borderRadius={radius.xl} style={styles.section} />
+        <Card style={styles.section}><Skeleton height={100} /></Card>
+        <Card style={styles.section}><Skeleton height={100} /></Card>
+      </Screen>
+    );
+  }
 
   return (
-    <Screen contentContainerStyle={styles.container} backgroundColor={colors.background}>
+    <Screen 
+      contentContainerStyle={styles.container} 
+      backgroundColor={colors.background}
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
+    >
       
-      {/* Balanced Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.greeting}>Good Morning 👋</Text>
+          <Text style={styles.greeting}>{greeting}</Text>
           <Text style={styles.userName}>{user?.name || 'John Doe'}</Text>
         </View>
       </View>
@@ -69,13 +130,12 @@ export default function HomeScreen() {
         </View>
       </Card>
 
-      {/* Status Card (Compact) */}
       <Card style={[styles.section, styles.rowCard]}>
         <View style={styles.flex1}>
           <Text style={styles.cardTitle}>Today's Status</Text>
           <Badge 
-            label={isCheckedIn ? 'Checked In' : 'Checked Out'} 
-            variant={isCheckedIn ? 'success' : 'neutral'} 
+            label={getStatusBadgeLabel()} 
+            variant={getStatusBadgeVariant()} 
           />
         </View>
         <View style={styles.dividerVertical} />
@@ -85,26 +145,32 @@ export default function HomeScreen() {
         </View>
       </Card>
 
-      {/* Quick Actions */}
       <View style={[styles.actionsContainer, styles.section]}>
         <Button 
-          title={isCheckedIn ? "Go to Check Out" : "Go to Check In"}
+          title={getActionButtonTitle()}
           variant="primary" 
           onPress={() => router.navigate('/(guard)/attendance')}
         />
       </View>
 
-      {/* Today Summary Card */}
       <Card style={styles.section}>
         <Text style={styles.cardTitle}>Today's Summary</Text>
         <View style={styles.summaryList}>
-          <SummaryRow icon="time-outline" label="Working Hours" value={calculateDuration(checkInTime, checkOutTime)} />
-          <SummaryRow icon="log-in-outline" label="Check In" value={formatTime(checkInTime)} />
-          <SummaryRow icon="log-out-outline" label="Check Out" value={formatTime(checkOutTime)} />
+          <SummaryRow icon="time-outline" label="Working Hours" value={formatDuration(workingMinutes)} />
+          <SummaryRow icon="log-in-outline" label="Check In" value={formatTime(todayRecord?.checkInTime)} />
+          <SummaryRow icon="log-out-outline" label="Check Out" value={formatTime(todayRecord?.checkOutTime)} />
         </View>
       </Card>
 
-      {/* Bottom Section: Upcoming Shift */}
+      <Card style={styles.section}>
+        <Text style={styles.cardTitle}>Attendance Summary</Text>
+        <View style={styles.summaryList}>
+          <SummaryRow icon="document-text-outline" label="Total Attendance Records" value={totalRecords.toString()} />
+          <SummaryRow icon="checkmark-circle-outline" label="Completed Shifts" value={completedShifts.toString()} />
+          <SummaryRow icon="pulse-outline" label="Current Active Shift" value={activeShift} />
+        </View>
+      </Card>
+
       <Card style={styles.section}>
         <Text style={styles.cardTitle}>Upcoming Shift</Text>
         <View style={styles.upcomingContent}>
@@ -126,17 +192,17 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.massive, // Noticeably lower start to let the screen breathe
-    paddingBottom: 120, // Even vertical distribution away from bottom navigation
+    paddingTop: spacing.massive, 
+    paddingBottom: 120, 
   },
   section: {
-    marginBottom: spacing.xxl, // Spread sections out evenly
+    marginBottom: spacing.xxl, 
   },
   flex1: {
     flex: 1,
   },
   header: {
-    marginBottom: spacing.xxxl, // Clear visual gap before the first card
+    marginBottom: spacing.xxxl, 
   },
   greeting: {
     fontSize: typography.size.sm,

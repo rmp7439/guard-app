@@ -36,7 +36,6 @@ export default function HomeScreen() {
     canCheckIn, 
     canCheckOut,
     isAttendanceLoading,
-    attendanceHistory
   } = useAttendance();
 
   const [greeting, setGreeting] = useState('Good Morning ☀️');
@@ -86,10 +85,6 @@ export default function HomeScreen() {
     if (canCheckOut) return 'Go to Check Out';
     return 'View Attendance';
   };
-
-  const totalRecords = attendanceHistory.length;
-  const completedShifts = attendanceHistory.filter(r => r.checkOutTime !== null).length;
-  const activeShift = currentStatus === 'CHECKED_IN' ? 'Yes' : 'No';
 
   if (isAttendanceLoading) {
     return (
@@ -159,15 +154,6 @@ export default function HomeScreen() {
           <SummaryRow icon="time-outline" label="Working Hours" value={formatDuration(workingMinutes)} />
           <SummaryRow icon="log-in-outline" label="Check In" value={formatTime(todayRecord?.checkInTime)} />
           <SummaryRow icon="log-out-outline" label="Check Out" value={formatTime(todayRecord?.checkOutTime)} />
-        </View>
-      </Card>
-
-      <Card style={styles.section}>
-        <Text style={styles.cardTitle}>Attendance Summary</Text>
-        <View style={styles.summaryList}>
-          <SummaryRow icon="document-text-outline" label="Total Attendance Records" value={totalRecords.toString()} />
-          <SummaryRow icon="checkmark-circle-outline" label="Completed Shifts" value={completedShifts.toString()} />
-          <SummaryRow icon="pulse-outline" label="Current Active Shift" value={activeShift} />
         </View>
       </Card>
 

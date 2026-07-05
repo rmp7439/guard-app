@@ -1,32 +1,39 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Keyboard, TextInput, Animated } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
-import { Screen } from '../../components/ui/Screen';
-import { Button } from '../../components/ui/Button';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { radius } from '../../theme/radius';
-import { typography } from '../../theme/typography';
-import { DEMO_OTP } from '../../constants/validation';
-import { AuthService } from '../../services/auth/auth.service';
-import { useAuth } from '../../features/auth/contexts/AuthContext';
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  Keyboard,
+  TextInput,
+  Animated,
+} from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
+import { Screen } from "../../components/ui/Screen";
+import { Button } from "../../components/ui/Button";
+import { colors } from "../../theme/colors";
+import { spacing } from "../../theme/spacing";
+import { radius } from "../../theme/radius";
+import { typography } from "../../theme/typography";
+import { DEMO_OTP } from "../../constants/validation";
+import { AuthService } from "../../services/auth/auth.service";
+import { useAuth } from "../../features/auth/contexts/AuthContext";
 
 export default function OTPScreen() {
   const router = useRouter();
   const { mobile } = useLocalSearchParams<{ mobile: string }>();
   const { login } = useAuth();
-  
-  const [otp, setOtp] = useState<string[]>(['', '', '', '', '', '']);
-  const [error, setError] = useState('');
+
+  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number | null>(0);
   const inputRefs = useRef<Array<TextInput | null>>([]);
-  
+
   const errorOpacity = useRef(new Animated.Value(0)).current;
   const isMounted = useRef(true);
 
-  const otpString = otp.join('');
+  const otpString = otp.join("");
   const isButtonDisabled = otpString.length !== 6 || isLoading;
 
   useEffect(() => {
@@ -38,7 +45,9 @@ export default function OTPScreen() {
 
   useEffect(() => {
     if (error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(
+        () => {},
+      );
       Animated.timing(errorOpacity, {
         toValue: 1,
         duration: 300,
@@ -50,17 +59,17 @@ export default function OTPScreen() {
   }, [error, errorOpacity]);
 
   const handleOtpChange = (text: string, index: number) => {
-    const cleanText = text.replace(/[^0-9]/g, '');
-    
+    const cleanText = text.replace(/[^0-9]/g, "");
+
     if (cleanText.length > 1) {
-      const chars = cleanText.split('').slice(0, 6);
-      const newOtp = ['', '', '', '', '', ''];
+      const chars = cleanText.split("").slice(0, 6);
+      const newOtp = ["", "", "", "", "", ""];
       chars.forEach((char, i) => {
         newOtp[i] = char;
       });
       setOtp(newOtp);
-      if (error) setError('');
-      
+      if (error) setError("");
+
       const nextFocus = Math.min(chars.length, 5);
       inputRefs.current[nextFocus]?.focus();
       return;
@@ -69,45 +78,53 @@ export default function OTPScreen() {
     const newOtp = [...otp];
     newOtp[index] = cleanText;
     setOtp(newOtp);
-    if (error) setError('');
+    if (error) setError("");
 
-    if (cleanText !== '' && index < 5) {
+    if (cleanText !== "" && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyPress = (e: any, index: number) => {
-    if (e.nativeEvent.key === 'Backspace' && otp[index] === '' && index > 0) {
+    if (e.nativeEvent.key === "Backspace" && otp[index] === "" && index > 0) {
       inputRefs.current[index - 1]?.focus();
       const newOtp = [...otp];
-      newOtp[index - 1] = '';
+      newOtp[index - 1] = "";
       setOtp(newOtp);
     }
   };
 
   const handleVerify = async () => {
     Keyboard.dismiss();
-    setError('');
+    setError("");
 
     if (otpString !== DEMO_OTP) {
-      setError(`Invalid OTP. Please enter the demo OTP ${DEMO_OTP}.`);
+      setError(`Invalid OTP`);
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const mobileNumber = Array.isArray(mobile) ? mobile[0] : (mobile || '');
-      const response = await AuthService.verifyOtp({ mobile: mobileNumber, otp: otpString });
-      
+      const mobileNumber = Array.isArray(mobile) ? mobile[0] : mobile || "";
+      const response = await AuthService.verifyOtp({
+        mobile: mobileNumber,
+        otp: otpString,
+      });
+
       if (isMounted.current) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
         login(response.user, response.token);
-        router.replace('/(guard)/home');
+        router.replace("/(guard)/home");
       }
     } catch (err) {
       if (isMounted.current) {
-        const message = err instanceof Error ? err.message : 'Invalid OTP entered. Please try again.';
+        const message =
+          err instanceof Error
+            ? err.message
+            : "Invalid OTP entered. Please try again.";
         setError(message);
       }
     } finally {
@@ -118,7 +135,10 @@ export default function OTPScreen() {
   };
 
   return (
-    <Screen contentContainerStyle={styles.container} backgroundColor={colors.background}>
+    <Screen
+      contentContainerStyle={styles.container}
+      backgroundColor={colors.background}
+    >
       <View style={styles.content}>
         <View style={styles.logoContainer}>
           <Text style={styles.logoText}>LOGO</Text>
@@ -127,8 +147,10 @@ export default function OTPScreen() {
         <View style={styles.headerContainer}>
           <Text style={styles.title}>Verification</Text>
           <Text style={styles.subtitle}>
-            Enter the 6-digit OTP sent to{'\n'}
-            <Text style={styles.boldText}>{mobile ? `+91 ${mobile}` : 'your mobile number'}</Text>
+            Enter the 6-digit OTP sent to{"\n"}
+            <Text style={styles.boldText}>
+              {mobile ? `+91 ${mobile}` : "your mobile number"}
+            </Text>
           </Text>
         </View>
 
@@ -162,7 +184,7 @@ export default function OTPScreen() {
             ))}
           </View>
           <Animated.Text style={[styles.errorText, { opacity: errorOpacity }]}>
-            {error || ' '}
+            {error || " "}
           </Animated.Text>
         </View>
 
@@ -180,24 +202,24 @@ export default function OTPScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flexGrow: 1,
+    justifyContent: "center",
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.huge,
     paddingBottom: spacing.xxxl,
-    justifyContent: 'center',
-    flex: 1,
   },
   content: {
-    width: '100%',
+    width: "100%",
     maxWidth: 400,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   logoContainer: {
     width: 56,
     height: 56,
     backgroundColor: colors.logoBackground,
     borderRadius: radius.lg,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: spacing.xl,
   },
   logoText: {
@@ -225,7 +247,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   inputContainer: {
-    width: '100%',
+    width: "100%",
     marginBottom: spacing.md,
   },
   label: {
@@ -235,9 +257,9 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   otpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    width: "100%",
     gap: spacing.xs,
   },
   otpBox: {
@@ -250,7 +272,7 @@ const styles = StyleSheet.create({
     fontSize: typography.size.title,
     fontWeight: typography.weight.semibold,
     color: colors.textPrimary,
-    textAlign: 'center',
+    textAlign: "center",
   },
   otpBoxFocused: {
     borderColor: colors.primary,

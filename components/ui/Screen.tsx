@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from "react";
 import {
   SafeAreaView,
   KeyboardAvoidingView,
@@ -11,8 +11,8 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   View,
-} from 'react-native';
-import { colors } from '../../theme/colors';
+} from "react-native";
+import { colors } from "../../theme/colors";
 
 interface ScreenProps {
   children: React.ReactNode;
@@ -56,6 +56,8 @@ export function Screen({
     <ScrollView
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      automaticallyAdjustKeyboardInsets={true}
       showsVerticalScrollIndicator={false}
       refreshControl={refreshControl}
       overScrollMode="never"
@@ -64,9 +66,9 @@ export function Screen({
     </ScrollView>
   ) : (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-       <View style={[styles.scrollContent, contentContainerStyle]}>
-          {children}
-       </View>
+      <View style={[styles.scrollContent, contentContainerStyle]}>
+        {children}
+      </View>
     </TouchableWithoutFeedback>
   );
 
@@ -74,8 +76,8 @@ export function Screen({
     <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
       <KeyboardAvoidingView
         style={[styles.keyboardAvoid, style]}
-        // Behavior padding is safer on iOS; Android natively resizes window better
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           {content}

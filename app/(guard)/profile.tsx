@@ -21,46 +21,6 @@ const InfoRow = ({ label, value, valueColor }: { label: string; value: string; v
   </View>
 );
 
-const ActionRow = ({
-  title,
-  icon,
-  onPress,
-  disabled = false,
-}: {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  onPress?: () => void;
-  disabled?: boolean;
-}) => (
-  <Pressable
-    style={({ pressed }) => [
-      styles.actionRow, 
-      disabled && styles.actionRowDisabled,
-      pressed && !disabled && styles.actionRowPressed
-    ]}
-    onPress={() => {
-      if (!disabled && onPress) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        onPress();
-      }
-    }}
-    disabled={disabled}
-  >
-    <View style={styles.actionLeft}>
-      <Ionicons 
-        name={icon} 
-        size={20} 
-        color={disabled ? colors.textSecondary : colors.textPrimary} 
-        style={styles.actionIcon} 
-      />
-      <Text style={[styles.actionTitle, disabled && styles.actionTitleDisabled]}>
-        {title}
-      </Text>
-    </View>
-    <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-  </Pressable>
-);
-
 const SectionHeader = ({ title }: { title: string }) => (
   <Text style={styles.sectionTitle}>{title}</Text>
 );
@@ -199,21 +159,7 @@ export default function ProfileScreen() {
         </Card>
       </View>
 
-      {/* SECTION 4: Quick Actions */}
-      <View style={styles.section}>
-        <SectionHeader title="Quick Actions" />
-        <Card style={styles.actionsCard}>
-          <ActionRow title="Profile Settings" icon="person-outline" onPress={() => {}} />
-          <View style={styles.divider} />
-          <ActionRow title="Privacy Policy" icon="shield-checkmark-outline" onPress={() => {}} />
-          <View style={styles.divider} />
-          <ActionRow title="Help & Support" icon="help-circle-outline" onPress={() => {}} />
-          <View style={styles.divider} />
-          <ActionRow title="About Application" icon="information-circle-outline" onPress={() => {}} />
-        </Card>
-      </View>
-
-      {/* SECTION 5: Application Information */}
+      {/* SECTION 4: Application Information */}
       <View style={styles.section}>
         <SectionHeader title="Application Info" />
         <Card style={styles.appInfoCard}>
@@ -232,7 +178,7 @@ export default function ProfileScreen() {
         </Card>
       </View>
 
-      {/* SECTION 6: Logout */}
+      {/* SECTION 5: Logout */}
       <View style={styles.footer}>
         <Button
           title="Logout Securely"
@@ -326,36 +272,6 @@ const styles = StyleSheet.create({
     fontSize: typography.size.md,
     color: colors.textPrimary,
     fontWeight: typography.weight.semibold,
-  },
-  actionsCard: {
-    paddingVertical: spacing.sm,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  actionRowPressed: {
-    opacity: 0.7,
-  },
-  actionRowDisabled: {
-    opacity: 0.5,
-  },
-  actionLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  actionIcon: {
-    marginRight: spacing.md,
-  },
-  actionTitle: {
-    fontSize: typography.size.md,
-    color: colors.textPrimary,
-    fontWeight: typography.weight.medium,
-  },
-  actionTitleDisabled: {
-    color: colors.textSecondary,
   },
   divider: {
     height: 1,

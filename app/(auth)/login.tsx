@@ -48,7 +48,7 @@ export default function LoginScreen() {
     setError('');
 
     if (mobileNumber !== DEMO_MOBILE) {
-      setError(`Invalid mobile number. Please use the demo number ${DEMO_MOBILE}.`);
+      setError(`Invalid mobile number.`);
       return;
     }
 
@@ -130,12 +130,12 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.huge,
-    paddingBottom: spacing.xxxl,
-    justifyContent: 'center',
-    flex: 1,
-  },
+  flexGrow: 1,
+  justifyContent: 'center',
+  paddingHorizontal: spacing.xl,
+  paddingTop: spacing.huge,
+  paddingBottom: spacing.xxxl,
+},
   content: {
     width: '100%',
     maxWidth: 400,
